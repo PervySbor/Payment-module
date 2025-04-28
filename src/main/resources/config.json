@@ -1,0 +1,15 @@
+{
+  "CONTAINER_NAME" :  "payment-module-container#1",
+  "DB_URL" : "jdbc:postgresql://localhost:5432/payment",
+  "DB_LOGIN" : "postgres",
+  "DB_PASSWORD" : "root",
+  "KAFKA_BROKERS": ["localhost:9092"],
+  "LOG_TOPIC": "logs_topic",
+  "LOG_KEY": "key_1",
+  "LOG_PARTITION_NUM": "0",
+  "CONFIRM_WAITING_PERIOD_MINUTES": "60",
+  "QUEUE_TOPIC": "delayed_payment_topic",
+  "QUEUE_KEY": "key_1",
+  "QUEUE_PARTITION_NUM": "0",
+  "CHECK_DELAY_SECONDS": "30"
+}
