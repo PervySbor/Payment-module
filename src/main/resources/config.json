@@ -11,5 +11,7 @@
   "QUEUE_TOPIC": "delayed_payment_topic",
   "QUEUE_KEY": "key_1",
   "QUEUE_PARTITION_NUM": "0",
+  "QUEUE_CONSUMER_THREADS_AMT": "10",
+  "QUEUE_CONSUMER_GROUP_NAME":"payment_processors",
   "CHECK_DELAY_SECONDS": "30"
 }

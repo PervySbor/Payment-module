@@ -1,4 +1,4 @@
-package payment.module.validation;
+package payment.module.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import payment.module.exceptions.ParsingUserRequestException;
@@ -9,10 +9,7 @@ import payment.module.util.LogManager;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.logging.Level;
 
 public class ValidationService {
@@ -32,7 +29,10 @@ public class ValidationService {
         this.checkDelay = checkDelay;
     }
 
-    public void validate(String json){//expected json {sessionId : <session_id>, subscriptionName : <subscription_name>, txHash : <tx_hash>}
+    public Map<String,String> validate(String json){//expected json {sessionId : <session_id>, subscriptionName : <subscription_name>, txHash : <tx_hash>}
+
+        Map<String,String> result = new HashMap<>();
+
         try {
             List<String> values = JsonManager.unwrapPairs(List.of("sessionId", "subscriptionName", "txHash"), json);
             UUID sessionId = UUID.fromString(values.get(0));
@@ -62,9 +62,13 @@ public class ValidationService {
 
             KafkaProducerManager.send(queueTopicName, queuePartition, queueKey, resultJson);
 
+            String jsonResponse = JsonManager.serialize(Map.of("message", "successfully accepted payment"));
+            result.put("json", jsonResponse);
+            result.put("statusCode", "202");
+
         } catch (ParsingUserRequestException | JsonProcessingException e) {
             LogManager.logException(e, Level.WARNING);
         }
-
+        return result;
     }
 }
