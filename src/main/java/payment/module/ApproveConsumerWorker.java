@@ -10,17 +10,16 @@ import payment.module.repository.Repository;
 import payment.module.util.JsonManager;
 import payment.module.util.LogManager;
 
-import java.sql.Timestamp;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 
-public class ApproveConsumerRunner implements Runnable{
+public class ApproveConsumerWorker implements Runnable{
     private final Repository repository;
     private final ConsumerRecord<String,String> record;
     private final ConcurrentMap<TopicPartition, OffsetAndMetadata> offsetsToCommit;
 
-    public ApproveConsumerRunner(Repository repository, ConsumerRecord<String,String> record, ConcurrentMap<TopicPartition, OffsetAndMetadata> offsetsToCommit){
+    public ApproveConsumerWorker(Repository repository, ConsumerRecord<String,String> record, ConcurrentMap<TopicPartition, OffsetAndMetadata> offsetsToCommit){
         this.repository = repository;
         this.record = record;
         this.offsetsToCommit = offsetsToCommit;

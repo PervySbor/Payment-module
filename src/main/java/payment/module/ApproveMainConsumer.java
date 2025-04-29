@@ -55,11 +55,13 @@ public class ApproveMainConsumer implements Runnable {
         do {
             ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100));
             for (ConsumerRecord<String, String> record : records) {
-                Runnable consumerWorker = new QueueConsumerWorker(repository, record, offsetsToCommit);
+                Runnable consumerWorker = new ApproveConsumerWorker(repository, record, offsetsToCommit);
                 this.es.execute(consumerWorker);
+                System.out.println("read line");
             }
 
             if (!offsetsToCommit.isEmpty()) {
+                System.out.println("commited read line");
                 Map<TopicPartition, OffsetAndMetadata> toCommit =
                         new HashMap<>(offsetsToCommit);
                 consumer.commitAsync(toCommit, (offsets, exception) -> {

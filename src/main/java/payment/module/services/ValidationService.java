@@ -58,7 +58,8 @@ public class ValidationService {
             cal.add(Calendar.SECOND, this.checkDelay);
             Timestamp scheduledAt = new Timestamp(cal.getTimeInMillis());
 
-            String resultJson = JsonManager.serialize(Map.of("txHash", txHash, "expireAt", expireAt, "scheduledAt", scheduledAt));
+            String resultJson = JsonManager.serialize(Map.of("tx_hash", txHash, "expire_at", expireAt,
+                    "scheduled_at", scheduledAt, "session_id", sessionId, "subscription_name", subscriptionName));
 
             KafkaProducerManager.send(queueTopicName, queuePartition, queueKey, resultJson);
 
