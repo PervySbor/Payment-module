@@ -45,8 +45,10 @@ public class QueueConsumerWorker implements Runnable{
                 * { push back to Kafka}
                 *  check visio doc for more details
                 * */
-                this.repository.updatePaymentStatus(txHash, PaymentStatus.COMPLETED); //payment_received
+                this.repository.updatePaymentStatus(txHash, PaymentStatus.PAYMENT_RECEIVED); //payment_received
                 //writing message to subscriptions_topic for identity module to create the subscription
+            } else { //expired & payment still not received
+                this.repository.updatePaymentStatus(txHash, PaymentStatus.FAILED);
             }
 
             TopicPartition tp = new TopicPartition(record.topic(), record.partition());

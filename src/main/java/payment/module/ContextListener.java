@@ -40,12 +40,22 @@ public class ContextListener implements ServletContextListener {
         String consumerGroupName = ConfigReader.getStringValue("QUEUE_CONSUMER_GROUP_NAME");
 
         QueueMainConsumer queueMainConsumer = new QueueMainConsumer(maxAmtOfThreads, bootServersString,
-                clientId + "-consumer",consumerGroupName , List.of(queueTopicName), repo);
+                clientId + "-queue-consumer",consumerGroupName , List.of(queueTopicName), repo);
         ctx.setAttribute("queueMainConsumer", queueMainConsumer);
 
-        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        maxAmtOfThreads = Integer.parseInt(ConfigReader.getStringValue("SUB_RESPONSE_CONSUMER_THREADS_AMT"));
+        consumerGroupName = ConfigReader.getStringValue("SUB_RESPONSE_CONSUMER_GROUP_NAME");
+        List<String> topics = ConfigReader.getListValue("SUB_RESPONSE_TOPICS");
+
+        ApproveMainConsumer approveMainConsumer = new ApproveMainConsumer(maxAmtOfThreads, bootServersString,
+                clientId + "-create-sub-consumer", consumerGroupName,topics, repo);
+        ctx.setAttribute("approveMainConsumer", approveMainConsumer);
+
+
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
         ctx.setAttribute("executorService", executorService);
         executorService.execute(queueMainConsumer);
+        executorService.execute(approveMainConsumer);
     }
 
     @Override
@@ -56,6 +66,9 @@ public class ContextListener implements ServletContextListener {
 
         QueueMainConsumer queueMainConsumer = (QueueMainConsumer) ctx.getAttribute("queueMainConsumer");
         queueMainConsumer.destroy();
+
+        ApproveMainConsumer approveMainConsumer = (ApproveMainConsumer) ctx.getAttribute("approveMainConsumer");
+        approveMainConsumer.destroy();
 
         KafkaProducerManager.destroy();
         MyHikariDataSource.destroy();

@@ -56,8 +56,8 @@ class RepositoryTest {
 
     @Test
     void updatePaymentStatus() {
-        repo.updatePaymentStatus("007", PaymentStatus.COMPLETED);
+        repo.updatePaymentStatus("007", PaymentStatus.PAYMENT_RECEIVED);
         Payment payment = DAO.executeQuery("SELECT p FROM Payment p WHERE p.txHash = :txHash", Map.of("txHash", "007"), Payment.class).getFirst();
-        assertEquals(PaymentStatus.COMPLETED, payment.getStatus());
+        assertEquals(PaymentStatus.PAYMENT_RECEIVED, payment.getStatus());
     }
 }

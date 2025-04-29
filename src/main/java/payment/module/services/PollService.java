@@ -27,7 +27,7 @@ public class PollService {
             String jsonResponse = "";
             int statusCode = 500;
             switch (status) {
-                case PaymentStatus.COMPLETED :
+                case PaymentStatus.SUBSCRIPTION_CREATED:
                     jsonResponse = JsonManager.serialize(Map.of("message", "Payment completed"));
                     statusCode = 200;
                     break;
@@ -35,7 +35,7 @@ public class PollService {
                     jsonResponse = JsonManager.serialize(Map.of("message", "Payment failed"));
                     statusCode = 408;
                     break;
-                case PaymentStatus.PENDING:
+                case PaymentStatus.PENDING: case PaymentStatus.PAYMENT_RECEIVED:
                     jsonResponse = JsonManager.serialize(Map.of("message", "Pending"));
                     statusCode = 202;
                     break;

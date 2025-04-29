@@ -1,7 +1,8 @@
 package payment.module.enums;
 
 public enum PaymentStatus {
-    COMPLETED,
+    SUBSCRIPTION_CREATED,
+    PAYMENT_RECEIVED,
     FAILED,
     PENDING
 }
