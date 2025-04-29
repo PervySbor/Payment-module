@@ -14,12 +14,12 @@ import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 
-public class ConsumerWorker implements Runnable{
+public class QueueConsumerWorker implements Runnable{
     private final Repository repository;
     private final ConsumerRecord<String,String> record;
     private final ConcurrentMap<TopicPartition, OffsetAndMetadata> offsetsToCommit;
 
-    public ConsumerWorker(Repository repository, ConsumerRecord<String,String> record, ConcurrentMap<TopicPartition, OffsetAndMetadata> offsetsToCommit){
+    public QueueConsumerWorker(Repository repository, ConsumerRecord<String,String> record, ConcurrentMap<TopicPartition, OffsetAndMetadata> offsetsToCommit){
         this.repository = repository;
         this.record = record;
         this.offsetsToCommit = offsetsToCommit;
@@ -32,8 +32,8 @@ public class ConsumerWorker implements Runnable{
             List<String> data = JsonManager.unwrapPairs(List.of("txHash", "expireAt", "scheduledAt"), record.value());
 
             String txHash = data.get(0);
-            Timestamp expireAt = Timestamp.valueOf(data.get(1));
-            Timestamp scheduledAt = Timestamp.valueOf(data.get(2));
+            Timestamp expireAt = new Timestamp(Long.parseLong(data.get(1)));
+            Timestamp scheduledAt = new Timestamp(Long.parseLong(data.get(2)));
             Timestamp currentTimestamp = new Timestamp(System.currentTimeMillis());
 
             if(scheduledAt.compareTo(currentTimestamp) > 0){ //not enough time passed to process it again
@@ -45,7 +45,8 @@ public class ConsumerWorker implements Runnable{
                 * { push back to Kafka}
                 *  check visio doc for more details
                 * */
-                this.repository.updatePaymentStatus(txHash, PaymentStatus.COMPLETED);
+                this.repository.updatePaymentStatus(txHash, PaymentStatus.COMPLETED); //payment_received
+                //writing message to subscriptions_topic for identity module to create the subscription
             }
 
             TopicPartition tp = new TopicPartition(record.topic(), record.partition());

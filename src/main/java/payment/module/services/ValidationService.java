@@ -29,12 +29,12 @@ public class ValidationService {
         this.checkDelay = checkDelay;
     }
 
-    public Map<String,String> validate(String json){//expected json {sessionId : <session_id>, subscriptionName : <subscription_name>, txHash : <tx_hash>}
+    public Map<String,String> validate(String json){//expected json {session_id : <session_id>, subscription_name : <subscription_name>, tx_hash : <tx_hash>}
 
         Map<String,String> result = new HashMap<>();
 
         try {
-            List<String> values = JsonManager.unwrapPairs(List.of("sessionId", "subscriptionName", "txHash"), json);
+            List<String> values = JsonManager.unwrapPairs(List.of("session_id", "subscription_name", "tx_hash"), json);
             UUID sessionId = UUID.fromString(values.get(0));
             String subscriptionName = values.get(1);
             String txHash = values.get(2);

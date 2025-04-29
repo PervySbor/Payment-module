@@ -1,6 +1,5 @@
 package payment.module;
 
-import jakarta.servlet.ServletContext;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -21,18 +20,18 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 
-public class MainConsumerRunner implements Runnable {
+public class QueueMainConsumer implements Runnable {
     private KafkaConsumer<String, String> consumer;
     private final ExecutorService es;
     private final Repository repository;
     private final ConcurrentMap<TopicPartition, OffsetAndMetadata> offsetsToCommit = new ConcurrentHashMap<>();
 
-    public MainConsumerRunner(int maxAmtOfThreads, String bootServers, String clientId, String consumerGroupName, List<String> topics, Repository repository){
+    public QueueMainConsumer(int maxAmtOfThreads, String bootServers, String clientId, String consumerGroupName, List<String> topics, Repository repository){
         this.es = Executors.newFixedThreadPool(maxAmtOfThreads);
         Properties props = new Properties();
         props.setProperty("bootstrap.servers", bootServers);
         props.setProperty("client.id", clientId);
-        props.setProperty("groupId", consumerGroupName);
+        props.setProperty("group.id", consumerGroupName);
         props.setProperty("enable.auto.commit", "false");
         props.setProperty("key.deserializer", StringDeserializer.class.getCanonicalName());
         props.setProperty("value.deserializer", StringDeserializer.class.getCanonicalName());
@@ -53,20 +52,25 @@ public class MainConsumerRunner implements Runnable {
     }
 
     public void run() {
-        ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(5));
-        for (ConsumerRecord<String, String> record : records) {
-            this.es.execute(new ConsumerWorker(repository, record, offsetsToCommit));
-        }
+        do {
+            ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100));
+            for (ConsumerRecord<String, String> record : records) {
+                Runnable consumerWorker = new QueueConsumerWorker(repository, record, offsetsToCommit);
+                this.es.execute(consumerWorker);
+            }
 
-        if (!offsetsToCommit.isEmpty()) {
-            Map<TopicPartition, OffsetAndMetadata> toCommit =
-                    new HashMap<>(offsetsToCommit);
-            consumer.commitAsync(toCommit, (offsets, exception) -> {
-                if (exception != null) {
-                    LogManager.logException(exception, Level.WARNING);
-                }
-            });
-            offsetsToCommit.clear();
-        }
+            if (!offsetsToCommit.isEmpty()) {
+                Map<TopicPartition, OffsetAndMetadata> toCommit =
+                        new HashMap<>(offsetsToCommit);
+                consumer.commitAsync(toCommit, (offsets, exception) -> {
+                    if (exception != null) {
+                        LogManager.logException(exception, Level.WARNING);
+                    }
+                });
+                offsetsToCommit.clear();
+            }
+        } while (!Thread.currentThread().isInterrupted());
+        es.close();
+        consumer.close();
     }
 }

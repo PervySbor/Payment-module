@@ -39,13 +39,13 @@ public class ContextListener implements ServletContextListener {
         int maxAmtOfThreads = Integer.parseInt(ConfigReader.getStringValue("QUEUE_CONSUMER_THREADS_AMT"));
         String consumerGroupName = ConfigReader.getStringValue("QUEUE_CONSUMER_GROUP_NAME");
 
-        MainConsumerRunner mainConsumerRunner = new MainConsumerRunner(maxAmtOfThreads, bootServersString,
-                consumerGroupName, clientId + "-consumer", List.of(queueTopicName), repo);
-        ctx.setAttribute("mainConsumerRunner", mainConsumerRunner);
+        QueueMainConsumer queueMainConsumer = new QueueMainConsumer(maxAmtOfThreads, bootServersString,
+                clientId + "-consumer",consumerGroupName , List.of(queueTopicName), repo);
+        ctx.setAttribute("queueMainConsumer", queueMainConsumer);
 
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         ctx.setAttribute("executorService", executorService);
-        executorService.execute(mainConsumerRunner);
+        executorService.execute(queueMainConsumer);
     }
 
     @Override
@@ -54,8 +54,8 @@ public class ContextListener implements ServletContextListener {
         ExecutorService executorService = (ExecutorService) ctx.getAttribute("executorService");
         executorService.close();
 
-        MainConsumerRunner mainConsumerRunner = (MainConsumerRunner) ctx.getAttribute("mainConsumerRunner");
-        mainConsumerRunner.destroy();
+        QueueMainConsumer queueMainConsumer = (QueueMainConsumer) ctx.getAttribute("queueMainConsumer");
+        queueMainConsumer.destroy();
 
         KafkaProducerManager.destroy();
         MyHikariDataSource.destroy();
