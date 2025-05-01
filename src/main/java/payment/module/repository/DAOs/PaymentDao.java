@@ -1,19 +1,23 @@
 package payment.module.repository.DAOs;
 
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.RollbackException;
 import payment.module.interfaces.DAO;
 import payment.module.repository.entities.Payment;
 import payment.module.repository.utils.JpaUtils;
+import payment.module.util.LogManager;
+
+import java.util.logging.Level;
 
 public class PaymentDao implements DAO<Payment> {
 
     @Override
     public void save(Payment obj) {
-        EntityManager em = JpaUtils.getEntityManagerFactory().createEntityManager();
-        em.getTransaction().begin();
-        em.persist(obj);
-        em.getTransaction().commit();
-        em.close();
+            EntityManager em = JpaUtils.getEntityManagerFactory().createEntityManager();
+            em.getTransaction().begin();
+            em.persist(obj);
+            em.getTransaction().commit();
+            em.close();
     }
 
     @Override

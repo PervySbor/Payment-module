@@ -15,7 +15,7 @@
   "QUEUE_CONSUMER_GROUP_NAME": "payment_processors",
   "CHECK_DELAY_SECONDS": "30",
   "SUB_RESPONSE_CONSUMER_THREADS_AMT": "2",
-  "SUB_RESPONSE_CONSUMER_GROUP_NAME": "sub_creators",
+  "SUB_RESPONSE_CONSUMER_GROUP_NAME": "sub_approvers",
   "SUB_RESPONSE_TOPICS": ["subs_response_topic"],
   "CREATE_SUB_TOPIC": "subscriptions_topic",
   "CREATE_SUB_KEY": "key_1",

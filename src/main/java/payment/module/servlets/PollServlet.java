@@ -25,10 +25,16 @@ public class PollServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String txHash = request.getParameter("txHash");
 
+        if(txHash == null){
+            returnError(response,422, "Failed to fetch tx_hash");
+            return;
+        }
+
         Map<String, String> data = this.ps.checkPayment(txHash);
 
-        if(!request.getHeader("Content-Type").equals("application/json")){
+        if(request.getHeader("Content-Type") == null){
             returnError(response,422, "Incorrect content type");
+            return;
         }
 
         PrintWriter writer = response.getWriter();

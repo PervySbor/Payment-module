@@ -5,6 +5,7 @@ import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
 import payment.module.repository.Repository;
 import payment.module.repository.utils.MyHikariDataSource;
+import payment.module.services.PollService;
 import payment.module.util.ConfigReader;
 import payment.module.util.KafkaProducerManager;
 import payment.module.services.ValidationService;
@@ -29,6 +30,10 @@ public class ContextListener implements ServletContextListener {
         ValidationService vs = new ValidationService(repo, confirmWaitingPeriod, queueTopicName, queueKey, queuePartitionNum, checkDelay);
 
         ctx.setAttribute("validationService", vs);
+
+        PollService ps = new PollService(repo);
+
+        ctx.setAttribute("pollService", ps);
 
         List<String> bootServers = ConfigReader.getListValue("KAFKA_BROKERS");
         String bootServersString = String.join(",", bootServers);

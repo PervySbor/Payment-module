@@ -1,6 +1,7 @@
 package payment.module.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import jakarta.persistence.RollbackException;
 import payment.module.exceptions.ParsingUserRequestException;
 import payment.module.repository.Repository;
 import payment.module.util.JsonManager;
@@ -52,7 +53,12 @@ public class ValidationService {
             cal.add(Calendar.MINUTE, this.confirmWaitingPeriod);
             Timestamp expireAt = new Timestamp(cal.getTimeInMillis());
 
-            repository.savePayment(txHash, sessionId, subscriptionName, BigDecimal.valueOf(0), currentTimestamp, expireAt);
+            try {
+                repository.savePayment(txHash, sessionId, subscriptionName, BigDecimal.valueOf(0), currentTimestamp, expireAt);
+            } catch(RollbackException e){
+                LogManager.logException(e, Level.WARNING);
+                return null;
+            }
 
             cal.setTime(currentTimestamp);
             cal.add(Calendar.SECOND, this.checkDelay);
