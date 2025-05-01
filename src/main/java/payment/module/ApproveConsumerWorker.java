@@ -49,6 +49,7 @@ public class ApproveConsumerWorker implements Runnable{
                 default:
                     txHash = JsonManager.unwrapPairs(List.of("tx_hash"), record.value()).getFirst();
                     this.repository.updatePaymentStatus(txHash, PaymentStatus.FAILED);
+                    LogManager.logException(new InternalException(message), Level.WARNING);
                     break;
             }
 
