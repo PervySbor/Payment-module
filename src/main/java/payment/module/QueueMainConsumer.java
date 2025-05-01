@@ -25,6 +25,7 @@ public class QueueMainConsumer implements Runnable {
     private final ExecutorService es;
     private final Repository repository;
     private final ConcurrentMap<TopicPartition, OffsetAndMetadata> offsetsToCommit = new ConcurrentHashMap<>();
+    private final ConcurrentMap<TopicPartition, Long> positionToRollback = new ConcurrentHashMap<>();
 
     public QueueMainConsumer(int maxAmtOfThreads, String bootServers, String clientId, String consumerGroupName, List<String> topics, Repository repository){
         this.es = Executors.newFixedThreadPool(maxAmtOfThreads);
@@ -55,8 +56,15 @@ public class QueueMainConsumer implements Runnable {
         do {
             ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100));
             for (ConsumerRecord<String, String> record : records) {
-                Runnable consumerWorker = new QueueConsumerWorker(repository, record, offsetsToCommit);
+                Runnable consumerWorker = new QueueConsumerWorker(repository, record, offsetsToCommit, positionToRollback);
                 this.es.execute(consumerWorker);
+            }
+
+            if(!positionToRollback.isEmpty()){
+                for(TopicPartition tp : positionToRollback.keySet()) {
+                    consumer.seek(tp, positionToRollback.get(tp));
+                }
+                positionToRollback.clear();
             }
 
             if (!offsetsToCommit.isEmpty()) {

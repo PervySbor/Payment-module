@@ -22,15 +22,17 @@ public class QueueConsumerWorker implements Runnable{
     private final Repository repository;
     private final ConsumerRecord<String,String> record;
     private final ConcurrentMap<TopicPartition, OffsetAndMetadata> offsetsToCommit;
+    private final ConcurrentMap<TopicPartition, Long> positionToRollback;
     private final String createSubTopicName;
     private final int createSubPartition;
     private final String createSubKey;
 
     public QueueConsumerWorker(Repository repository, ConsumerRecord<String,String> record, ConcurrentMap<TopicPartition,
-            OffsetAndMetadata> offsetsToCommit){
+            OffsetAndMetadata> offsetsToCommit, ConcurrentMap<TopicPartition, Long> positionToRollback){
         this.repository = repository;
         this.record = record;
         this.offsetsToCommit = offsetsToCommit;
+        this.positionToRollback = positionToRollback;
         this.createSubTopicName = ConfigReader.getStringValue("CREATE_SUB_TOPIC");
         this.createSubPartition = Integer.parseInt(ConfigReader.getStringValue("CREATE_SUB_PARTITION"));
         this.createSubKey = ConfigReader.getStringValue("CREATE_SUB_KEY");
@@ -39,6 +41,7 @@ public class QueueConsumerWorker implements Runnable{
     //receiving Map.of("txHash", txHash, "expireAt", expireAt, "scheduledAt", scheduledAt)
     @Override
     public void run() {
+        TopicPartition tp = new TopicPartition(record.topic(), record.partition());
         try {
             List<String> data = JsonManager.unwrapPairs(List.of("tx_hash", "expire_at", "scheduled_at", "session_id", "subscription_name"), record.value());
 
@@ -51,6 +54,8 @@ public class QueueConsumerWorker implements Runnable{
             String request = "";
 
             if(scheduledAt.compareTo(currentTimestamp) > 0){ //not enough time passed to process it again
+                //rolling back to the position before the writing we've just skipped
+                positionToRollback.put(tp, record.offset());
                 return;
             } else if (expireAt.compareTo(currentTimestamp) > 0){ //not expired yet
                 /* omitted calls to BlockchainManager
@@ -72,8 +77,6 @@ public class QueueConsumerWorker implements Runnable{
             } else { //expired & payment still not received
                 this.repository.updatePaymentStatus(txHash, PaymentStatus.FAILED);
             }
-
-            TopicPartition tp = new TopicPartition(record.topic(), record.partition());
 
             offsetsToCommit.put(tp, new OffsetAndMetadata(record.offset() + 1));
 
