@@ -2,6 +2,7 @@ package payment.module.repository;
 
 import payment.module.enums.PaymentStatus;
 import payment.module.exceptions.FatalException;
+import payment.module.exceptions.TransactionNotFoundException;
 import payment.module.repository.DAOs.PaymentDao;
 import payment.module.repository.entities.Payment;
 
@@ -18,10 +19,10 @@ public class Repository {
         paymentDao.save(payment);
     }
 
-    public PaymentStatus checkPaymentStatus(String txHash){
+    public PaymentStatus checkPaymentStatus(String txHash) throws TransactionNotFoundException {
         Payment payment = paymentDao.find(txHash);
         if(payment == null){
-            throw new FatalException("searching for the status of non existing payment");
+            throw new TransactionNotFoundException("searching for the status of non existing payment");
         }
         return payment.getStatus();
     }

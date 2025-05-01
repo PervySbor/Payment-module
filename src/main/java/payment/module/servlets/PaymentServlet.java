@@ -27,9 +27,15 @@ public class PaymentServlet extends HttpServlet {
         try {
             if(!request.getHeader("Content-Type").equals("application/json")){
                 returnError(response,422, "Incorrect content type");
+                return;
             }
             String jsonBody = request.getReader().readLine(); //as the whole json must be on a single line, according to the HTTP/1.1
             Map<String,String> data = this.vService.validate(jsonBody);
+
+            if(data.get("error") != null){
+                returnError(response, Integer.parseInt(data.get("error")), data.get("message"));
+                return;
+            }
 
             response.setHeader("Content-Type","application/json");
             response.setStatus(Integer.parseInt(data.get("statusCode")));

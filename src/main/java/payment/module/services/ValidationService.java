@@ -57,7 +57,9 @@ public class ValidationService {
                 repository.savePayment(txHash, sessionId, subscriptionName, BigDecimal.valueOf(0), currentTimestamp, expireAt);
             } catch(RollbackException e){
                 LogManager.logException(e, Level.WARNING);
-                return null;
+                result.put("error", "409");
+                result.put("message", "duplicate transaction hash");
+                return result;
             }
 
             cal.setTime(currentTimestamp);
@@ -73,8 +75,11 @@ public class ValidationService {
             result.put("json", jsonResponse);
             result.put("statusCode", "202");
 
-        } catch (ParsingUserRequestException | JsonProcessingException e) {
+        } catch (IllegalArgumentException | JsonProcessingException | ParsingUserRequestException e) {
             LogManager.logException(e, Level.WARNING);
+            result.put("error", "422");
+            result.put("message", "failed to process given content");
+            return result;
         }
         return result;
     }

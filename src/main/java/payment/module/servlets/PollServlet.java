@@ -32,6 +32,11 @@ public class PollServlet extends HttpServlet {
 
         Map<String, String> data = this.ps.checkPayment(txHash);
 
+        if(data.get("error") != null){
+            returnError(response, Integer.parseInt(data.get("error")), data.get("message"));
+            return;
+        }
+
         if(request.getHeader("Content-Type") == null){
             returnError(response,422, "Incorrect content type");
             return;

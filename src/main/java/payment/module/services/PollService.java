@@ -3,6 +3,7 @@ package payment.module.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import payment.module.enums.PaymentStatus;
 import payment.module.exceptions.ParsingUserRequestException;
+import payment.module.exceptions.TransactionNotFoundException;
 import payment.module.repository.Repository;
 import payment.module.util.JsonManager;
 import payment.module.util.LogManager;
@@ -44,9 +45,13 @@ public class PollService {
             result.put("statusCode", String.valueOf(statusCode));
 
 
+        } catch(TransactionNotFoundException ex){
+            result.put("error", "404");
+            result.put("message", "transaction not found");
         } catch (JsonProcessingException e) {
             LogManager.logException(e, Level.WARNING);
-            result.put("statusCode", "500");
+            result.put("error", "422");
+            result.put("message", "failed to form the answer");
         }
         return result;
     }
