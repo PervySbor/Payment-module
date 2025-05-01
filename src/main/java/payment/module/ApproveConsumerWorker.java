@@ -17,9 +17,9 @@ import java.util.logging.Level;
 public class ApproveConsumerWorker implements Runnable{
     private final Repository repository;
     private final ConsumerRecord<String,String> record;
-    private final ConcurrentMap<TopicPartition, OffsetAndMetadata> offsetsToCommit;
+    private final ConcurrentMap<TopicPartition, Long> offsetsToCommit;
 
-    public ApproveConsumerWorker(Repository repository, ConsumerRecord<String,String> record, ConcurrentMap<TopicPartition, OffsetAndMetadata> offsetsToCommit){
+    public ApproveConsumerWorker(Repository repository, ConsumerRecord<String,String> record, ConcurrentMap<TopicPartition, Long> offsetsToCommit){
         this.repository = repository;
         this.record = record;
         this.offsetsToCommit = offsetsToCommit;
@@ -54,7 +54,8 @@ public class ApproveConsumerWorker implements Runnable{
 
             TopicPartition tp = new TopicPartition(record.topic(), record.partition());
 
-            offsetsToCommit.put(tp, new OffsetAndMetadata(record.offset() + 1));
+            offsetsToCommit.compute(tp, (topic, currentOffset) ->
+                    (currentOffset == null || currentOffset < record.offset() + 1)? record.offset()+1: currentOffset);
 
         } catch (ParsingUserRequestException e) {
             LogManager.logException(e, Level.SEVERE);

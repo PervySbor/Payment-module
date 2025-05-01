@@ -24,7 +24,7 @@ public class ApproveMainConsumer implements Runnable {
     private KafkaConsumer<String, String> consumer;
     private final ExecutorService es;
     private final Repository repository;
-    private final ConcurrentMap<TopicPartition, OffsetAndMetadata> offsetsToCommit = new ConcurrentHashMap<>();
+    private final ConcurrentMap<TopicPartition, Long> offsetsToCommit = new ConcurrentHashMap<>();
 
     public ApproveMainConsumer(int maxAmtOfThreads, String bootServers, String clientId, String consumerGroupName, List<String> topics, Repository repository){
         this.es = Executors.newFixedThreadPool(maxAmtOfThreads);
@@ -63,7 +63,10 @@ public class ApproveMainConsumer implements Runnable {
             if (!offsetsToCommit.isEmpty()) {
                 System.out.println("commited read line");
                 Map<TopicPartition, OffsetAndMetadata> toCommit =
-                        new HashMap<>(offsetsToCommit);
+                        new HashMap<>();
+                for(TopicPartition tp: offsetsToCommit.keySet()){
+                    toCommit.put(tp, (new OffsetAndMetadata(offsetsToCommit.get(tp))));
+                }
                 consumer.commitAsync(toCommit, (offsets, exception) -> {
                     if (exception != null) {
                         LogManager.logException(exception, Level.WARNING);

@@ -21,14 +21,14 @@ import java.util.logging.Level;
 public class QueueConsumerWorker implements Runnable{
     private final Repository repository;
     private final ConsumerRecord<String,String> record;
-    private final ConcurrentMap<TopicPartition, OffsetAndMetadata> offsetsToCommit;
+    private final ConcurrentMap<TopicPartition, Long> offsetsToCommit;
     private final ConcurrentMap<TopicPartition, Long> positionToRollback;
     private final String createSubTopicName;
     private final int createSubPartition;
     private final String createSubKey;
 
     public QueueConsumerWorker(Repository repository, ConsumerRecord<String,String> record, ConcurrentMap<TopicPartition,
-            OffsetAndMetadata> offsetsToCommit, ConcurrentMap<TopicPartition, Long> positionToRollback){
+            Long> offsetsToCommit, ConcurrentMap<TopicPartition, Long> positionToRollback){
         this.repository = repository;
         this.record = record;
         this.offsetsToCommit = offsetsToCommit;
@@ -55,7 +55,9 @@ public class QueueConsumerWorker implements Runnable{
 
             if(scheduledAt.compareTo(currentTimestamp) > 0){ //not enough time passed to process it again
                 //rolling back to the position before the writing we've just skipped
-                positionToRollback.put(tp, record.offset());
+                //assigning position to rollback to only if other threads haven't found an earlier position to rollback to
+                positionToRollback.compute(tp, (topic, currentOffset) ->
+                     (currentOffset == null || currentOffset > record.offset())? record.offset(): currentOffset);
                 return;
             } else if (expireAt.compareTo(currentTimestamp) > 0){ //not expired yet
                 /* omitted calls to BlockchainManager
@@ -78,7 +80,9 @@ public class QueueConsumerWorker implements Runnable{
                 this.repository.updatePaymentStatus(txHash, PaymentStatus.FAILED);
             }
 
-            offsetsToCommit.put(tp, new OffsetAndMetadata(record.offset() + 1));
+            //assigning offset only if other threads haven't processed earlier writings
+            offsetsToCommit.compute(tp, (topic, currentOffset) ->
+                    (currentOffset == null || currentOffset < record.offset() + 1)? record.offset()+1: currentOffset);
 
         } catch (ParsingUserRequestException e) {
             LogManager.logException(e, Level.SEVERE);

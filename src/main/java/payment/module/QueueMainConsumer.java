@@ -14,17 +14,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.logging.Level;
 
 public class QueueMainConsumer implements Runnable {
     private KafkaConsumer<String, String> consumer;
     private final ExecutorService es;
     private final Repository repository;
-    private final ConcurrentMap<TopicPartition, OffsetAndMetadata> offsetsToCommit = new ConcurrentHashMap<>();
+    private final ConcurrentMap<TopicPartition, Long> offsetsToCommit = new ConcurrentHashMap<>();
     private final ConcurrentMap<TopicPartition, Long> positionToRollback = new ConcurrentHashMap<>();
 
     public QueueMainConsumer(int maxAmtOfThreads, String bootServers, String clientId, String consumerGroupName, List<String> topics, Repository repository){
@@ -59,6 +56,11 @@ public class QueueMainConsumer implements Runnable {
                 Runnable consumerWorker = new QueueConsumerWorker(repository, record, offsetsToCommit, positionToRollback);
                 this.es.execute(consumerWorker);
             }
+            try {
+                this.es.awaitTermination(30, TimeUnit.SECONDS); //processing of each message isn't gonna take more than 30 seconds
+            } catch (InterruptedException e) {
+                LogManager.logException(e, Level.SEVERE);
+            }
 
             if(!positionToRollback.isEmpty()){
                 for(TopicPartition tp : positionToRollback.keySet()) {
@@ -69,7 +71,10 @@ public class QueueMainConsumer implements Runnable {
 
             if (!offsetsToCommit.isEmpty()) {
                 Map<TopicPartition, OffsetAndMetadata> toCommit =
-                        new HashMap<>(offsetsToCommit);
+                        new HashMap<>();
+                for(TopicPartition tp : offsetsToCommit.keySet()){
+                    toCommit.put(tp, new OffsetAndMetadata(offsetsToCommit.get(tp)));
+                }
                 consumer.commitAsync(toCommit, (offsets, exception) -> {
                     if (exception != null) {
                         LogManager.logException(exception, Level.WARNING);
