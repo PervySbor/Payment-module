@@ -1,7 +1,9 @@
 package payment.module.util;
 
 
+import payment.module.enums.LogType;
 import payment.module.models.LogMessage;
+import payment.module.models.LogMessageWrapper;
 
 import java.sql.Timestamp;
 import java.util.logging.ConsoleHandler;
@@ -13,6 +15,7 @@ public class LogManager {
     private static final String logTopicName;
     private static final String key;
     private static final int partitionNumber;
+    private static final String containerName;
 
     static {
         ConsoleHandler handler = new ConsoleHandler();
@@ -22,6 +25,7 @@ public class LogManager {
         logTopicName = ConfigReader.getStringValue("LOG_TOPIC");
         key = ConfigReader.getStringValue("LOG_KEY");
         partitionNumber = Integer.parseInt(ConfigReader.getStringValue("LOG_PARTITION_NUM"));
+        containerName = ConfigReader.getStringValue("CONTAINER_NAME");
     }
 
     public static String logException(Exception exception, Level level){
@@ -31,15 +35,16 @@ public class LogManager {
         logger.log(Level.INFO, "Currently logging exception: ", exception);
 
         Timestamp timestamp = new Timestamp(System.currentTimeMillis());
-        LogMessage logMessage = new LogMessage(exception.getMessage(), timestamp, level);
+        LogMessage logMessage = new LogMessage(exception.getMessage(), containerName, timestamp, level);
 
         for(StackTraceElement element : elements){
             String message = element.toString();
             logMessage.addTraceElement(message);
         }
+        LogMessageWrapper wrappedLogMessage = new LogMessageWrapper(logMessage, LogType.ERROR);
 
         try {
-            jsonLogMessage = JsonManager.serialize(logMessage);
+            jsonLogMessage = JsonManager.serialize(wrappedLogMessage);
         } catch (com.fasterxml.jackson.core.JsonProcessingException e){
             logger.log(Level.SEVERE, "Failed to serialize LogMessage: ", e);
         }
